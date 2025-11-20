@@ -1,7 +1,8 @@
 # Simple
-<<<<<<< HEAD
+AIROWIRE NETWORKS
+=======
 pooja
 kruthika
 =======
 Good afternoon
->>>>>>> dev
+dev
