@@ -2,32 +2,34 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
+
+        stage('Checkout Code') {
             steps {
-                // Jenkins automatically clones the public repo
-                checkout scm
+                git branch: 'main', url: 'https://github.com/kruthikav04/Simple.git'
             }
         }
 
-        stage('Build') {
+        stage('Copy Code to VM') {
             steps {
-                echo "Building the project..."
-                // Add your build commands here
-                sh "echo Build step executed"
+                sshagent(['vm-ssh']) {
+                    sh 'scp -o StrictHostKeyChecking=no -r * backup_gcp@10.4.4.70:/home/backup_gcp/simple'
+                }
             }
         }
 
-        stage('Test') {
+        stage('Run App on VM') {
             steps {
-                echo "Running tests..."
-                sh "echo Tests executed"
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo "Deploying..."
-                sh "echo Deploy step executed"
+                sshagent(['vm-ssh']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no backup_gcp@10.4.4.70 "
+                        cd simple &&
+                        pkill -f app.py || true &&
+                        python3 -m venv venv &&
+                        ./venv/bin/pip install -r requirements.txt &&
+                        nohup ./venv/bin/python app.py > app.log 2>&1 &
+                    "
+                    '''
+                }
             }
         }
     }
