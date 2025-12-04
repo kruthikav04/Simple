@@ -13,7 +13,8 @@ pipeline {
             steps {
                 sh '''
                     python3 -m venv venv
-                    chmod +x venv/bin/activate
+                    # Ensure pip is installed in the venv
+                    ./venv/bin/python -m ensurepip --upgrade
                 '''
             }
         }
@@ -21,8 +22,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    ./venv/bin/pip install --upgrade pip
-                    ./venv/bin/pip install -r requirements.txt
+                    # Use python -m pip to avoid missing pip issue
+                    ./venv/bin/python -m pip install --upgrade pip
+                    ./venv/bin/python -m pip install -r requirements.txt
                 '''
             }
         }
@@ -30,7 +32,10 @@ pipeline {
         stage('Run Application') {
             steps {
                 sh '''
+                    # Stop any old running instance of the app
                     pkill -f "python app.py" || true
+
+                    # Run Flask app in background
                     nohup ./venv/bin/python app.py > app.log 2>&1 &
                 '''
             }
