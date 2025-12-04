@@ -9,23 +9,31 @@ pipeline {
             }
         }
 
-        stage('Deploy to VM') {
+        stage('Create Virtual Env') {
             steps {
-                sshagent(['vm-ssh']) {
-                    sh '''
-                    scp -o StrictHostKeyChecking=no -r * backup_gcp@10.4.4.70:/home/backup_gcp/simple
+                sh '''
+                    python3 -m venv venv
+                    chmod +x venv/bin/activate
+                '''
+            }
+        }
 
-                    ssh -o StrictHostKeyChecking=no backup_gcp@10.4.4.70 "
-                        cd /home/backup_gcp/simple
-                        pkill -f 'python3 app.py' || true
-                        python3 -m venv venv
-                        ./venv/bin/pip install -r requirements.txt
-                        nohup ./venv/bin/python app.py > app.log 2>&1 &
-                    "
-                    '''
-                }
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    ./venv/bin/pip install --upgrade pip
+                    ./venv/bin/pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Run Application') {
+            steps {
+                sh '''
+                    pkill -f "python app.py" || true
+                    nohup ./venv/bin/python app.py > app.log 2>&1 &
+                '''
             }
         }
     }
 }
-
